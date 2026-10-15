@@ -2659,6 +2659,9 @@ impl PdfCraftApp {
                     if let Some(doc) = self.session.get(self.views[i].id) {
                         prepare::select_all(&mut self.views[i], &doc.form);
                     }
+                } else if self.right == Some(RightPanel::Pages) && self.views[i].pages_panel_hovered {
+                    // Over the Pages panel the thumbnail view owns Select all.
+                    self.views[i].select_all_pages();
                 } else {
                     self.views[i].select_all();
                 }

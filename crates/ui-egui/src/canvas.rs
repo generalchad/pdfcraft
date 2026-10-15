@@ -387,6 +387,9 @@ pub struct DocView {
     pub(crate) auto_scroll: crate::autoscroll::AutoScroll,
     /// Pages selected in the organize grid or the Pages panel (0-based). Empty means "the current page".
     pub selected: BTreeSet<usize>,
+    /// Whether the pointer was over the Pages panel's thumbnails last frame: ⌘/Ctrl+A there
+    /// selects every page, as the shortcut handler reads a frame later.
+    pub pages_panel_hovered: bool,
     organize_range: crate::page_selection_ui::PageSelectionInput,
     /// Anchor for ⇧-click range selection in the organize grid.
     select_anchor: Option<usize>,
@@ -634,6 +637,7 @@ impl DocView {
             precise_scroll_until: 0.0,
             auto_scroll: Default::default(),
             selected: BTreeSet::new(),
+            pages_panel_hovered: false,
             select_anchor: None,
             organize_range: Default::default(),
             pending_edit: None,
@@ -1137,10 +1141,7 @@ impl DocView {
     /// Select all: every page in Organize, or every word on the current page.
     pub fn select_all(&mut self) -> bool {
         if self.organize {
-            self.selected = (0..self.page_count).collect();
-            // Keep the current page as the anchor for the next Shift-click.
-            self.select_anchor = (self.page_count > 0).then_some(self.current);
-            return !self.selected.is_empty();
+            return self.select_all_pages();
         }
         let page = self.current;
         let Some(t) = self.texts.get(&page) else { return false };
@@ -1149,6 +1150,15 @@ impl DocView {
         }
         self.selection = Some(Selection::run(page, 0, t.glyphs.len() - 1));
         true
+    }
+
+    /// Select every page, as the Organize grid and the Pages panel do on ⌘/Ctrl+A. The current
+    /// page stays put and anchors the next ⇧-click.
+    pub fn select_all_pages(&mut self) -> bool {
+        self.selected = (0..self.page_count).collect();
+        // Keep the current page as the anchor for the next Shift-click.
+        self.select_anchor = (self.page_count > 0).then_some(self.current);
+        !self.selected.is_empty()
     }
 
     /// Rotate the view 90° clockwise or counter-clockwise (View ▸ Rotate View, ⇧⌘+ / ⇧⌘−).

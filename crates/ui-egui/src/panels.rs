@@ -1003,20 +1003,17 @@ fn outline_item(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, item: &OutlineIte
 /// offers Extract, Cut, Copy and Paste on the selection, or on the page clicked; dragging
 /// moves the selection, or the page grabbed, to the gap it is dropped on.
 fn pages(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, view: &mut crate::DocView, modal: bool, editable: bool, nav: &mut Option<Nav>) {
+    // Over the thumbnails the panel is the thumbnail view: ⌘/Ctrl+A then selects every page (the
+    // shortcut handler reads this next frame), as Escape and Delete act here.
+    let over = !modal && !ui.ctx().egui_wants_keyboard_input() && ui.rect_contains_pointer(ui.clip_rect());
+    view.pages_panel_hovered = over;
     // Escape drops the selection while the pointer is over the panel and nothing else wants the key.
-    if !modal
-        && !view.selected.is_empty()
-        && !ui.ctx().egui_wants_keyboard_input()
-        && ui.rect_contains_pointer(ui.clip_rect())
-        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
-    {
+    if over && !view.selected.is_empty() && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
         view.clear_page_selection(Some(view.current));
     }
     // Delete (or Backspace) deletes the selection, or the current page, likewise.
-    if !modal
+    if over
         && editable
-        && !ui.ctx().egui_wants_keyboard_input()
-        && ui.rect_contains_pointer(ui.clip_rect())
         && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Delete) || i.consume_key(egui::Modifiers::NONE, egui::Key::Backspace))
     {
         delete_pages(view, info.pages.len());

@@ -3271,6 +3271,32 @@ fn pages_panel_shift_click_picks_a_range_and_a_plain_click_starts_over() {
 }
 
 #[test]
+fn pages_panel_select_all_key_selects_every_page() {
+    let mut h = pages_panel(5);
+    // The pointer over a thumbnail makes the Pages panel the thumbnail view: ⌘/Ctrl+A selects
+    // every page, as Acrobat does, instead of selecting the current page's text.
+    h.hover_at(panel_thumb(&h, "Page 3"));
+    h.run_steps(2);
+    h.key_press_modifiers(Modifiers::COMMAND, Key::A);
+    h.run_steps(2);
+    assert_eq!(picked(&h), [0, 1, 2, 3, 4]);
+    assert_eq!(h.state().views[0].current, 0, "selecting all pages keeps the reader's place");
+    h.get_by_label_contains("5 pages selected");
+    assert!(!dirty(&h), "selecting pages doesn't edit the document");
+    // The selection is the one the page commands act on, as in the organize grid.
+    assert_eq!(h.state().views[0].target_pages(), [0, 1, 2, 3, 4]);
+
+    // Away from the thumbnails the shortcut still selects page text, not pages.
+    h.state_mut().views[0].clear_page_selection(None);
+    h.hover_at(h.state().views[0].viewport_rect().center());
+    h.run_steps(2);
+    h.key_press_modifiers(Modifiers::COMMAND, Key::A);
+    h.run_steps(2);
+    assert!(picked(&h).is_empty(), "⌘A off the thumbnails selects text, not pages");
+    assert!(!dirty(&h));
+}
+
+#[test]
 fn pages_panel_escape_clears_and_deleted_pages_leave_the_selection() {
     let mut h = pages_panel(5);
     h.get_by_label("Page 2").click_modifiers(Modifiers::COMMAND);
